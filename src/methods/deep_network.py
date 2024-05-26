@@ -30,6 +30,10 @@ class MLP(nn.Module):
         #### WRITE YOUR CODE HERE!
         ###
         ##
+        self.l1 = nn.Linear(784, 512)
+        self.l2 = nn.Linear(512, 256)
+        self.l3 = nn.Linear(256, 128)
+        self.l4 = nn.Linear(128, 10)
 
     def forward(self, x):
         """
@@ -46,7 +50,12 @@ class MLP(nn.Module):
         #### WRITE YOUR CODE HERE!
         ###
         ##
-        return preds
+        x = x.flatten(-3)
+
+        x = F.relu(self.l1(x))
+        x = F.relu(self.l2(x))
+        x = F.relu(self.l3(x))
+        return self.l4(x)
 
 
 class CNN(nn.Module):
@@ -150,7 +159,7 @@ class Trainer(object):
         self.batch_size = batch_size
 
         self.criterion = nn.CrossEntropyLoss()
-        self.optimizer = ...  ### WRITE YOUR CODE HERE
+        self.optimizer = torch.optim.SGD(model.parameters(), lr)  ### WRITE YOUR CODE HERE
 
     def train_all(self, dataloader):
         """
@@ -182,6 +191,19 @@ class Trainer(object):
         #### WRITE YOUR CODE HERE!
         ###
         ##
+        self.model.train()
+        for it, data in enumerate(dataloader):
+            x, y = data
+
+            # foward pass through network from image to one hot vector
+            y_pred = self.model(x)
+            # calculate loss
+            loss = self.criterion(y_pred, y)
+            # reset gradient and backpropagate loss
+            self.optimizer.zero_grad()
+            loss.backward()
+            # update weights
+            self.optimizer.step()
 
     def predict_torch(self, dataloader):
         """
@@ -205,6 +227,13 @@ class Trainer(object):
         #### WRITE YOUR CODE HERE!
         ###
         ##
+        self.model.eval()
+        pred_labels = []
+        with torch.no_grad():
+            for it, data in enumerate(dataloader):
+                x = data
+                y_pred = self.model(x)
+                pred_labels += [torch.argmax(y_pred, dim=1)]
         return pred_labels
     
     def fit(self, training_data, training_labels):
