@@ -30,10 +30,10 @@ class MLP(nn.Module):
         #### WRITE YOUR CODE HERE!
         ###
         ##
-        self.l1 = nn.Linear(784, 512)
+        self.l1 = nn.Linear(input_size, 512)
         self.l2 = nn.Linear(512, 256)
         self.l3 = nn.Linear(256, 128)
-        self.l4 = nn.Linear(128, 10)
+        self.l4 = nn.Linear(128, n_classes)
 
     def forward(self, x):
         """
@@ -50,7 +50,7 @@ class MLP(nn.Module):
         #### WRITE YOUR CODE HERE!
         ###
         ##
-        x = x.flatten(-3)
+
 
         x = F.relu(self.l1(x))
         x = F.relu(self.l2(x))
@@ -143,7 +143,7 @@ class Trainer(object):
     It will also serve as an interface between numpy and pytorch.
     """
 
-    def __init__(self, model, lr, epochs, batch_size):
+    def __init__(self, model, lr, epochs, batch_size, opti="SGD"):
         """
         Initialize the trainer object for a given model.
 
@@ -157,9 +157,13 @@ class Trainer(object):
         self.epochs = epochs
         self.model = model
         self.batch_size = batch_size
+        ### WRITE YOUR CODE HERE
 
         self.criterion = nn.CrossEntropyLoss()
-        self.optimizer = torch.optim.SGD(model.parameters(), lr)  ### WRITE YOUR CODE HERE
+        if(opti == "SGD"):
+            self.optimizer = torch.optim.SGD(model.parameters(), lr)
+        elif(opti == "ADAM"):
+            self.optimizer = torch.optim.Adam(model.parameters(), lr)
 
     def train_all(self, dataloader):
         """
@@ -172,7 +176,7 @@ class Trainer(object):
             dataloader (DataLoader): dataloader for training data
         """
         for ep in range(self.epochs):
-            self.train_one_epoch(dataloader)
+            self.train_one_epoch(dataloader, ep)
 
             ### WRITE YOUR CODE HERE if you want to do add something else at each epoch
 
@@ -192,18 +196,30 @@ class Trainer(object):
         ###
         ##
         self.model.train()
+        batchloss = 0
+        eploss = 0
         for it, data in enumerate(dataloader):
             x, y = data
 
-            # foward pass through network from image to one hot vector
-            y_pred = self.model(x)
-            # calculate loss
-            loss = self.criterion(y_pred, y)
-            # reset gradient and backpropagate loss
-            self.optimizer.zero_grad()
-            loss.backward()
-            # update weights
-            self.optimizer.step()
+            for i in range(len(x)):
+                # foward pass through network from image to one hot vector
+                y_pred = self.model(x[i])
+                # calculate loss
+                loss = self.criterion(y_pred, y[i])
+                # reset gradient and backpropagate loss
+                self.optimizer.zero_grad()
+                loss.backward()
+                # update weights
+                self.optimizer.step()
+                batchloss += loss.item()
+            batchloss /= len(x)
+            print(f"Epoch {ep+1}/{self.epochs}, Iteration of batch {it+1}/{len(dataloader)}, Average loss: {batchloss}")
+            eploss += batchloss
+
+        eploss /= len(dataloader)
+        print(f"Epoch {ep+1}/{self.epochs} done, average loss in epoch: {eploss}")
+
+
 
     def predict_torch(self, dataloader):
         """
@@ -228,12 +244,14 @@ class Trainer(object):
         ###
         ##
         self.model.eval()
-        pred_labels = []
+        pred_labels = torch.tensor([])
         with torch.no_grad():
             for it, data in enumerate(dataloader):
-                x = data
-                y_pred = self.model(x)
-                pred_labels += [torch.argmax(y_pred, dim=1)]
+                for i in range(len(data[0])):
+                    x = data[0][i]
+                    y_pred = nn.Softmax(dim=0)(self.model(x))
+                    pred_labels = torch.cat((pred_labels, torch.argmax(y_pred).unsqueeze(0)))
+        print(pred_labels.shape)
         return pred_labels
     
     def fit(self, training_data, training_labels):
@@ -251,9 +269,8 @@ class Trainer(object):
 
         # First, prepare data for pytorch
         train_dataset = TensorDataset(torch.from_numpy(training_data).float(), 
-                                      torch.from_numpy(training_labels))
+                                      torch.from_numpy(training_labels).long())
         train_dataloader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
-        
         self.train_all(train_dataloader)
 
         return self.predict(training_data)

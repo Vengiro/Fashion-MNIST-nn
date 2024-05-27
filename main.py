@@ -19,9 +19,13 @@ def main(args):
                           of this file). Their value can be accessed as "args.argument".
     """
     ## 1. First, we load our data and flatten the images into vectors
-    xtrain, xtest, ytrain = load_data(args.data_path)
+    xtrain, xtest, ytrain = load_data(args.data)
+    print(f"Train data: {xtrain.shape} - Test data: {xtest.shape} - Train labels: {ytrain.shape}")
     xtrain = xtrain.reshape(xtrain.shape[0], -1)
     xtest = xtest.reshape(xtest.shape[0], -1)
+    print(f"Train data: {xtrain.shape} - Test data: {xtest.shape} - Train labels: {ytrain.shape}")
+
+
 
     ## 2. Then we must prepare it. This is were you can create a validation set,
     #  normalize, add bias, etc.
@@ -48,34 +52,40 @@ def main(args):
     # Prepare the model (and data) for Pytorch
     # Note: you might need to reshape the data depending on the network you use!
     n_classes = get_n_classes(ytrain)
+    in_size = xtrain.shape[1]
     if args.nn_type == "mlp":
-        model = ... ### WRITE YOUR CODE HERE
+        model = MLP(in_size, n_classes) ### WRITE YOUR CODE HERE
 
     summary(model)
 
     # Trainer object
+
     method_obj = Trainer(model, lr=args.lr, epochs=args.max_iters, batch_size=args.nn_batch_size)
+    if args.ADAM:
+        method_obj = Trainer(model, lr=args.lr, epochs=args.max_iters, batch_size=args.nn_batch_size, opti="ADAM")
 
-
+    size = 60000
     ## 4. Train and evaluate the method
 
     # Fit (:=train) the method on the training data
-    preds_train = method_obj.fit(xtrain, ytrain)
+    preds_train = method_obj.fit(xtrain[:size], ytrain[:size])
 
     # Predict on unseen data
-    preds = method_obj.predict(xtest)
+    preds = method_obj.predict(xtest[:size])
 
     ## Report results: performance on train and valid/test sets
-    acc = accuracy_fn(preds_train, ytrain)
-    macrof1 = macrof1_fn(preds_train, ytrain)
+    acc = accuracy_fn(preds_train, ytrain[:len(preds_train)])
+    macrof1 = macrof1_fn(preds_train, ytrain[:len(preds_train)])
     print(f"\nTrain set: accuracy = {acc:.3f}% - F1-score = {macrof1:.6f}")
 
 
     ## As there are no test dataset labels, check your model accuracy on validation dataset.
     # You can check your model performance on test set by submitting your test set predictions on the AIcrowd competition.
-    acc = accuracy_fn(preds, xtest)
-    macrof1 = macrof1_fn(preds, xtest)
-    print(f"Validation set:  accuracy = {acc:.3f}% - F1-score = {macrof1:.6f}")
+
+    """TOP 3 DES ERREURS DANS LE CODE DONNE VDM CA A 0 SENS DONC COMMENTER"""
+    #acc = accuracy_fn(preds, xtest)
+    #macrof1 = macrof1_fn(preds, xtest)
+    #print(f"Validation set:  accuracy = {acc:.3f}% - F1-score = {macrof1:.6f}")
 
 
     ### WRITE YOUR CODE HERE if you want to add other outputs, visualization, etc.
@@ -102,6 +112,8 @@ if __name__ == '__main__':
     parser.add_argument('--max_iters', type=int, default=100, help="max iters for methods which are iterative")
     parser.add_argument('--test', action="store_true",
                         help="train on whole training data and evaluate on the test data, otherwise use a validation set")
+
+    parser.add_argument('--ADAM', action="store_true", help="Use ADAM optimizer instead of SGD")
 
 
     # "args" will keep in memory the arguments and their values,
