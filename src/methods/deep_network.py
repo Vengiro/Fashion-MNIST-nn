@@ -196,25 +196,24 @@ class Trainer(object):
         ###
         ##
         self.model.train()
-        batchloss = 0
+
         eploss = 0
         for it, data in enumerate(dataloader):
             x, y = data
 
-            for i in range(len(x)):
-                # foward pass through network from image to one hot vector
-                y_pred = self.model(x[i])
-                # calculate loss
-                loss = self.criterion(y_pred, y[i])
-                # reset gradient and backpropagate loss
-                self.optimizer.zero_grad()
-                loss.backward()
-                # update weights
-                self.optimizer.step()
-                batchloss += loss.item()
-            batchloss /= len(x)
-            print(f"Epoch {ep+1}/{self.epochs}, Iteration of batch {it+1}/{len(dataloader)}, Average loss: {batchloss}")
-            eploss += batchloss
+
+            # foward pass through network from image to one hot vector
+            y_pred = self.model(x)
+            # calculate loss
+            loss = self.criterion(y_pred, y)
+            # reset gradient and backpropagate loss
+            self.optimizer.zero_grad()
+            loss.backward()
+            # update weights
+            self.optimizer.step()
+
+            print(f"Epoch {ep+1}/{self.epochs}, Iteration of batch {it+1}/{len(dataloader)}, Average loss: {loss.item()}")
+            eploss += loss.item()
 
         eploss /= len(dataloader)
         print(f"Epoch {ep+1}/{self.epochs} done, average loss in epoch: {eploss}")
@@ -251,7 +250,6 @@ class Trainer(object):
                     x = data[0][i]
                     y_pred = nn.Softmax(dim=0)(self.model(x))
                     pred_labels = torch.cat((pred_labels, torch.argmax(y_pred).unsqueeze(0)))
-        print(pred_labels.shape)
         return pred_labels
     
     def fit(self, training_data, training_labels):

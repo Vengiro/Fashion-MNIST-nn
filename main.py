@@ -64,7 +64,8 @@ def main(args):
     if args.ADAM:
         method_obj = Trainer(model, lr=args.lr, epochs=args.max_iters, batch_size=args.nn_batch_size, opti="ADAM")
 
-    size = 60000
+    # TODO: pour pas test tout le dataset pcq cest long
+    size = 1000
     ## 4. Train and evaluate the method
 
     # Fit (:=train) the method on the training data
@@ -113,6 +114,7 @@ if __name__ == '__main__':
     parser.add_argument('--test', action="store_true",
                         help="train on whole training data and evaluate on the test data, otherwise use a validation set")
 
+    # Additional arguments by the students
     parser.add_argument('--ADAM', action="store_true", help="Use ADAM optimizer instead of SGD")
 
 
