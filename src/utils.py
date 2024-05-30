@@ -112,3 +112,28 @@ def mse_fn(pred,gt):
     loss = (pred-gt)**2
     loss = np.mean(loss)
     return loss
+
+# Display in terminal
+#####################
+
+def update_progress_bar(progress, total, prefix='', suffix='', decimals=1, length=50, fill='█', print_end="\r"):
+    """
+    Updates the progress bar in the terminal.
+
+    Parameters:
+        progress   - Required  : current progress (int)
+        total      - Required  : total iterations (int)
+        prefix     - Optional  : prefix string (str)
+        suffix     - Optional  : suffix string (str)
+        decimals   - Optional  : positive number of decimals in percent complete (int)
+        length     - Optional  : character length of bar (int)
+        fill       - Optional  : bar fill character (str)
+        print_end  - Optional  : end character (e.g. "\r", "\r\n") (str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (progress / float(total)))
+    filled_length = int(length * progress // total)
+    bar = fill * filled_length + '-' * (length - filled_length)
+    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end=print_end)
+    # Print New Line on Complete
+    if progress == total: 
+        print()

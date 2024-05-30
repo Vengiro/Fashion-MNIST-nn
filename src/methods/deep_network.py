@@ -1,7 +1,12 @@
+import time
+import datetime
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import TensorDataset, DataLoader
+
+from src.utils import update_progress_bar
 
 ## MS2
 
@@ -204,6 +209,7 @@ class Trainer(object):
         self.model.train()
 
         eploss = 0
+        s = time.time()
         for it, data in enumerate(dataloader):
             x, y = data
 
@@ -216,12 +222,13 @@ class Trainer(object):
             loss.backward()
             # update weights
             self.optimizer.step()
-
-            print(f"Epoch {ep+1}/{self.epochs}, Iteration of batch {it+1}/{len(dataloader)}, Average loss: {loss.item()}")
+            
+            update_progress_bar(it+1, len(dataloader), prefix=f"Epoch {ep+1}/{self.epochs}", suffix=f"Loss: {loss.item()}", length=50)
             eploss += loss.item()
 
         eploss /= len(dataloader)
-        print(f"Epoch {ep+1}/{self.epochs} done, average loss in epoch: {eploss}")
+        str_s = str(datetime.timedelta(seconds=time.time()-s))
+        print(f"Epoch {ep+1}/{self.epochs} done in {str_s}, average loss in epoch: {eploss}\n")
 
 
 
@@ -273,9 +280,15 @@ class Trainer(object):
         train_dataset = TensorDataset(torch.from_numpy(training_data).float(), 
                                       torch.from_numpy(training_labels).long())
         train_dataloader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
-        self.train_all(train_dataloader)
 
-        return self.predict(training_data)
+        s = time.time()
+        self.train_all(train_dataloader)
+        print("Total raining time: ", str(datetime.timedelta(seconds=time.time()-s)).split(".")[0])
+        
+        s = time.time()
+        pred_labels = self.predict(training_data)
+        print("Prediction time: ", str(datetime.timedelta(seconds=time.time()-s)).split(".")[0])
+        return pred_labels
 
     def predict(self, test_data):
         """
