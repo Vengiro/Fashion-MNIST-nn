@@ -65,7 +65,7 @@ class CNN(nn.Module):
     It should use at least one convolutional layer.
     """
 
-    def __init__(self, input_channels, n_classes):
+    def __init__(self, input_channels, n_classes, img_width=28, img_height=28, filters=(32, 64, 128), kernel_size=3):
         """
         Initialize the network.
         
@@ -77,11 +77,17 @@ class CNN(nn.Module):
             n_classes (int): number of classes to predict
         """
         super().__init__()
-        ##
-        ###
-        #### WRITE YOUR CODE HERE!
-        ###
-        ##
+        
+        # The two next lines are here to make sure the dimension of the layer before and after the convolutions stay the same
+        assert kernel_size % 2 == 1, "Kernel size must be odd"
+        same_padding = kernel_size // 2
+        
+        self.conv2d1 = nn.Conv2d(input_channels, filters[0], kernel_size, padding=same_padding)
+        self.conv2d2 = nn.Conv2d(filters[0], filters[1], kernel_size, padding=same_padding)
+        self.conv2d3 = nn.Conv2d(filters[1], filters[2], kernel_size, padding=same_padding)
+        self.fc1 = nn.Linear(128*(img_height//8)*(img_width//8), 128)
+        self.fc2 = nn.Linear(128, n_classes)
+        self.pool = nn.MaxPool2d(2, 2)
 
     def forward(self, x):
         """
@@ -93,13 +99,13 @@ class CNN(nn.Module):
             preds (tensor): logits of predictions of shape (N, C)
                 Reminder: logits are value pre-softmax.
         """
-        ##
-        ###
-        #### WRITE YOUR CODE HERE!
-        ###
-        ##
-        return preds
-
+        preds = F.relu(self.conv2d1(x))
+        preds = F.relu(self.conv2d2(self.pool(preds)))
+        preds = F.relu(self.conv2d3(self.pool(preds)))
+        preds = self.pool(preds)
+        preds = preds.reshape((preds.shape[0], -1))
+        preds = F.relu(self.fc1(preds))
+        return self.fc2(preds)
 
 class MyViT(nn.Module):
     """
@@ -201,7 +207,6 @@ class Trainer(object):
         for it, data in enumerate(dataloader):
             x, y = data
 
-
             # foward pass through network from image to one hot vector
             y_pred = self.model(x)
             # calculate loss
@@ -246,9 +251,8 @@ class Trainer(object):
         pred_labels = torch.tensor([])
         with torch.no_grad():
             for it, data in enumerate(dataloader):
-                for i in range(len(data[0])):
-                    x = data[0][i]
-                    y_pred = nn.Softmax(dim=0)(self.model(x))
+                for x in data[0]:
+                    y_pred = nn.Softmax(dim=0)(self.model(x.unsqueeze(0)).squeeze(0))
                     pred_labels = torch.cat((pred_labels, torch.argmax(y_pred).unsqueeze(0)))
         return pred_labels
     
