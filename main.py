@@ -75,6 +75,7 @@ def main(args):
     elif args.nn_type == "transformer":
         # A toi de jouer Kake
         ...
+        positional_embeddings = MyViT.get_positional_embeddings(100, 300, plot=args.show_heatmap)
     else:
         raise ValueError(f"Unknown network type: {args.nn_type}")
         
@@ -140,6 +141,8 @@ if __name__ == '__main__':
 
     # Additional arguments by the students
     parser.add_argument('--ADAM', action="store_true", help="Use ADAM optimizer instead of SGD")
+    # New argument for showing or not showing the heatmap
+    parser.add_argument('--show_heatmap', action="store_true", help="Show the positional embeddings heatmap for the Transformer")
 
 
     # "args" will keep in memory the arguments and their values,

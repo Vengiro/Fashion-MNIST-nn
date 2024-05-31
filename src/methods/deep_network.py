@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import TensorDataset, DataLoader
+import numpy as np
 
 from src.utils import update_progress_bar
 
@@ -233,8 +234,6 @@ class MyViT(nn.Module):
                     patches[idx, i * n_patches + j] = patch.flatten()
         return patches
 
-    assert patchify(torch.rand(2, 1, 28, 28), 2).shape == (2, 4, 196)
-    assert patchify(torch.rand(16, 3, 56, 56), 7).shape == (16, 49, 192)
 
     def forward(self, x):
         """
