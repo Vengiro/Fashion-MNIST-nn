@@ -135,6 +135,43 @@ class MyViTBlock(nn.Module):
         out = out + self.mlp(self.norm2(out))
         return out
 
+class MyMSA(nn.Module):
+    def __init__(self, d, n_heads=2):
+        super(MyMSA, self).__init__()
+        self.d = d
+        self.n_heads = n_heads
+
+        assert d % n_heads == 0, f"Can't divide dimension {d} into {n_heads} heads"
+        d_head = int(d / n_heads)
+        self.d_head = d_head
+
+        self.q_mappings = nn.ModuleList([nn.Linear(d_head, d_head) for _ in range(self.n_heads)])
+        self.k_mappings = nn.ModuleList([nn.Linear(d_head, d_head) for _ in range(self.n_heads)])
+        self.v_mappings = nn.ModuleList([nn.Linear(d_head, d_head) for _ in range(self.n_heads)])
+
+        self.softmax = nn.Softmax(dim=-1)
+
+    def forward(self, sequences):
+        result = []
+        for sequence in sequences:
+            seq_result = []
+            for head in range(self.n_heads):
+
+                # Select the mapping associated to the given head.
+                q_mapping = self.q_mappings[head]
+                k_mapping = self.k_mappings[head]
+                v_mapping = self.v_mappings[head]
+
+                seq = sequence[:, head * self.d_head: (head + 1) * self.d_head]
+
+                # Map seq to q, k, v.
+                q, k, v = q_mapping(seq), k_mapping(seq), v_mapping(seq) ### WRITE YOUR CODE HERE
+
+                attention =  self.softmax(q @ k.T / (self.d_head ** 0.5))
+                seq_result.append(attention @ v)
+            result.append(torch.hstack(seq_result))
+        return torch.cat([torch.unsqueeze(r, dim=0) for r in result])
+    
 class MyViT(nn.Module):
     
     """
@@ -216,6 +253,8 @@ class MyViT(nn.Module):
         Returns:
             patches (torch.Tensor): Patches of the input images of shape (N, n_patches ** 2, patch_size ** 2 * C)
         """
+        if len(images.shape) == 3:
+            images = images.unsqueeze(1)  # Adds a channel dimension
         n, c, h, w = images.shape
 
         assert h == w  # We assume square image.
@@ -247,13 +286,13 @@ class MyViT(nn.Module):
         """
         n = x.shape[0]
          # 1. Patchify
-        patches = patchify(images, self.n_patches) 
+        patches = MyViT.patchify(x, self.n_patches) 
 
         # 2. Linear mapping
-        tokens = self.linear_mapper(patches)
+        tokens = self.linear(patches)
 
         # 3. Add token
-        tokens = torch.cat((self.class_token.expand(n, 1, -1), tokens), dim=1)
+        tokens = torch.cat((self.token.expand(n, 1, -1), tokens), dim=1)
 
         # 4. Add positional embeddings
         pos_embed = self.positional_embeddings.repeat(n, 1, 1)
