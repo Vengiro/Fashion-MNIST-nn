@@ -74,7 +74,24 @@ def main(args):
         
     elif args.nn_type == "transformer":
         # A toi de jouer Kake
-        ...
+        # Assuming xtrain and xtest need to be reshaped to fit the transformer's expected input dimensions.
+        # Typically, ViT models take images directly, but our images are currently flattened vectors.
+        # We need to reshape them back to 2D images. 
+        xtrain = xtrain.reshape((num_train_samples, 28, 28))
+        xtest = xtest.reshape((num_test_samples, 28, 28))
+
+        # Define parameters for the transformer model
+        chw = (1, 28, 28)
+        n_patches = 7
+        n_blocks = 2
+        n_blocks = 2
+        hidden_d = 8
+        n_heads = 2
+        out_d = 10
+
+        # Initialize the transformer model.
+        model = MyViT(chw, n_patches, n_blocks, hidden_d, n_heads, out_d, n_classes)
+
         positional_embeddings = MyViT.get_positional_embeddings(100, 300, plot=args.show_heatmap)
     else:
         raise ValueError(f"Unknown network type: {args.nn_type}")
