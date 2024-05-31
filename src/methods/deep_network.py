@@ -112,22 +112,129 @@ class CNN(nn.Module):
         preds = F.relu(self.fc1(preds))
         return self.fc2(preds)
 
+class MyViTBlock(nn.Module):
+    def __init__(self, hidden_d, n_heads, mlp_ratio=4):
+        super(MyViTBlock, self).__init__()
+        self.hidden_d = hidden_d
+        self.n_heads = n_heads
+
+        self.norm1 = nn.LayerNorm(hidden_d)
+        self.mhsa = MyMSA(hidden_d, n_heads)
+        self.norm2 = nn.LayerNorm(hidden_d) 
+        self.mlp = nn.Sequential(
+            nn.Linear(hidden_d, mlp_ratio * hidden_d),
+            nn.GELU(),
+            nn.Linear(mlp_ratio * hidden_d, hidden_d)
+        )
+
+    def forward(self, x):
+        # MHSA + residual connection.
+        out = x + self.mhsa(self.norm1(x))
+        # Feedforward + residual connection
+        out = out + self.mlp(self.norm2(out))
+        return out
+
 class MyViT(nn.Module):
+    
     """
     A Transformer-based neural network
     """
+    
+    def get_positional_embeddings(sequence_length, d):
+        """
+        Generate positional embeddings.
 
+        Arguments:
+            sequence_length (int): Length of the sequence
+            d (int): Dimension of the positional embeddings
+
+        Returns:
+            positional_embeddings (torch.Tensor): Positional embeddings of shape (sequence_length, d)
+        """
+        result = torch.ones(sequence_length, d)
+        for i in range(sequence_length):
+            for j in range(d):
+                result[i][j] = np.sin(i / (10000 ** (j / d))) if j % 2 == 0 else np.cos(i / (10000 ** ((j - 1) / d)))
+        return result
+    
     def __init__(self, chw, n_patches, n_blocks, hidden_d, n_heads, out_d):
         """
         Initialize the network.
-        
+
+        Arguments:
+            chw (tuple): (channels, height, width) of the input images
+            n_patches (int): number of patches to split the image into
+            n_blocks (int): number of transformer blocks
+            hidden_d (int): dimension of the hidden layer
+            n_heads (int): number of attention heads
+            out_d (int): output dimension (number of classes)
         """
         super().__init__()
-        ##
-        ###
-        #### WRITE YOUR CODE HERE!
-        ###
-        ##
+
+        self.hidden_d = hidden_d
+        self.n_heads = n_heads
+        self.n_blocks = n_blocks
+        self.n_patches = n_patches
+        self.out_d = out_d
+        self.chw = chw
+        # Patch
+        assert chw[1] == chw[2], "be squared!"
+        assert chw[1] % n_patches == 0, "input divisible by n_patches"
+        assert chw[2] % n_patches == 0
+        self.patch_size = (chw[1]//n_patches, chw[2]//n_patches)
+
+        # Linear mapper
+        self.input_d = int(chw[0] * self.patch_size[0] * self.patch_size[1])
+        self.linear = nn.Linear(self.input_d, hidden_d)
+
+        # Token
+        self.token = nn.Parameter(torch.randn(1, n_patches*n_patches, hidden_d))
+        
+        # Positional embedding
+        self.positional_embeddings = MyViT.get_positional_embeddings(n_patches ** 2 + 1, hidden_d) ### WRITE YOUR CODE HERE
+
+        # Transformer blocks
+        self.blocks = nn.ModuleList([MyViTBlock(hidden_d, n_heads) for _ in range(n_blocks)])
+
+        # Classification MLP
+        self.mlp = nn.Sequential(
+            nn.Linear(self.hidden_d, out_d),
+            nn.Softmax(dim=-1)
+        )
+    
+
+
+    def patchify(images, n_patches):
+        """
+        Patchify the input images into patches for the Vision Transformer.
+        
+        Arguments:
+            images (torch.Tensor): Input images of shape (N, C, H, W)
+            n_patches (int): Number of patches to split the image into
+        
+        Returns:
+            patches (torch.Tensor): Patches of the input images of shape (N, n_patches ** 2, patch_size ** 2 * C)
+        """
+        n, c, h, w = images.shape
+
+        assert h == w  # We assume square image.
+
+        patches = torch.zeros(n, n_patches ** 2, h * w * c // n_patches ** 2)
+        patch_size = h // n_patches  ### WRITE YOUR CODE HERE
+
+        for idx, image in enumerate(images):
+            for i in range(n_patches):
+                for j in range(n_patches):
+
+                    # Extract the patch of the image.
+                    patch = image[:, i * patch_size: (i + 1) * patch_size, j * patch_size: (j + 1) * patch_size] ### WRITE YOUR CODE HERE
+
+                    # Flatten the patch and store it.
+                    patches[idx, i * n_patches + j] = patch.flatten()
+        return patches
+
+    assert patchify(torch.rand(2, 1, 28, 28), 2).shape == (2, 4, 196)
+    assert patchify(torch.rand(16, 3, 56, 56), 7).shape == (16, 49, 192)
 
     def forward(self, x):
         """
