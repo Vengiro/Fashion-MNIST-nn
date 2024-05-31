@@ -245,11 +245,30 @@ class MyViT(nn.Module):
             preds (tensor): logits of predictions of shape (N, C)
                 Reminder: logits are value pre-softmax.
         """
-        ##
-        ###
-        #### WRITE YOUR CODE HERE!
-        ###
-        ##
+        n = x.shape[0]
+         # 1. Patchify
+        patches = patchify(images, self.n_patches) 
+
+        # 2. Linear mapping
+        tokens = self.linear_mapper(patches)
+
+        # 3. Add token
+        tokens = torch.cat((self.class_token.expand(n, 1, -1), tokens), dim=1)
+
+        # 4. Add positional embeddings
+        pos_embed = self.positional_embeddings.repeat(n, 1, 1)
+        preds = tokens + pos_embed
+
+        # 5. Transformer blocks
+        for block in self.blocks:
+            preds = block(preds)
+
+        # 6.Get classification token only
+        preds = preds[:, 0]
+
+        # 7. Map to output
+        preds = self.mlp(preds)
+
         return preds
 
 
