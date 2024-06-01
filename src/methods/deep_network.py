@@ -226,10 +226,10 @@ class MyViT(nn.Module):
         self.linear = nn.Linear(self.input_d, hidden_d)
 
         # Token
-        self.token = nn.Parameter(torch.randn(1, n_patches*n_patches, hidden_d))
+        self.token = nn.Parameter(torch.randn(1, hidden_d))
         
         # Positional embedding
-        self.positional_embeddings = MyViT.get_positional_embeddings(n_patches ** 2 + 1, hidden_d) ### WRITE YOUR CODE HERE
+        self.positional_embeddings = MyViT.get_positional_embeddings(n_patches ** 2 + 1, hidden_d)
 
         # Transformer blocks
         self.blocks = nn.ModuleList([MyViTBlock(hidden_d, n_heads) for _ in range(n_blocks)])
@@ -260,14 +260,14 @@ class MyViT(nn.Module):
         assert h == w  # We assume square image.
 
         patches = torch.zeros(n, n_patches ** 2, h * w * c // n_patches ** 2)
-        patch_size = h // n_patches  ### WRITE YOUR CODE HERE
+        patch_size = h // n_patches  
 
         for idx, image in enumerate(images):
             for i in range(n_patches):
                 for j in range(n_patches):
 
                     # Extract the patch of the image.
-                    patch = image[:, i * patch_size: (i + 1) * patch_size, j * patch_size: (j + 1) * patch_size] ### WRITE YOUR CODE HERE
+                    patch = image[:, i * patch_size: (i + 1) * patch_size, j * patch_size: (j + 1) * patch_size] 
 
                     # Flatten the patch and store it.
                     patches[idx, i * n_patches + j] = patch.flatten()
@@ -295,8 +295,7 @@ class MyViT(nn.Module):
         tokens = torch.cat((self.token.expand(n, 1, -1), tokens), dim=1)
 
         # 4. Add positional embeddings
-        pos_embed = self.positional_embeddings.repeat(n, 1, 1)
-        preds = tokens + pos_embed
+        preds = tokens + self.positional_embeddings.repeat(n, 1, 1)
 
         # 5. Transformer blocks
         for block in self.blocks:
