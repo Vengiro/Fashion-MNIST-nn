@@ -85,14 +85,14 @@ def main(args):
         n_patches = 7
         n_blocks = 2
         n_blocks = 2
-        hidden_d = 8
+        hidden_d = 128 
         n_heads = 2
         out_d = 10
 
         # Initialize the transformer model.
-        model = MyViT(chw, n_patches, n_blocks, hidden_d, n_heads, out_d, n_classes)
+        model = MyViT(chw, n_patches, n_blocks, hidden_d, n_heads, out_d)
 
-        positional_embeddings = MyViT.get_positional_embeddings(100, 300, plot=args.show_heatmap)
+        # positional_embeddings = MyViT.get_positional_embeddings(100, 300, plot=args.show_heatmap)
     else:
         raise ValueError(f"Unknown network type: {args.nn_type}")
         
