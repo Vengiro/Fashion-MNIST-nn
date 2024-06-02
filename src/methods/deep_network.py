@@ -71,7 +71,7 @@ class CNN(nn.Module):
     It should use at least one convolutional layer.
     """
 
-    def __init__(self, input_channels, n_classes, img_width=28, img_height=28, filters=(32, 64, 128), kernel_size=3):
+    def __init__(self, input_channels, n_classes, img_width=28, img_height=28, filters=(24, 48, 96), kernel_size=3):
         """
         Initialize the network.
         
@@ -91,10 +91,10 @@ class CNN(nn.Module):
         self.conv2d1 = nn.Conv2d(input_channels, filters[0], kernel_size, padding=same_padding)
         self.conv2d2 = nn.Conv2d(filters[0], filters[1], kernel_size, padding=same_padding)
         self.conv2d3 = nn.Conv2d(filters[1], filters[2], kernel_size, padding=same_padding)
-        self.fc1 = nn.Linear(128*(img_height//8)*(img_width//8), 128)
-        self.fc2 = nn.Linear(128, n_classes)
+        self.fc1 = nn.Linear(filters[2]*(img_height//8)*(img_width//8), filters[2])
+        self.fc2 = nn.Linear(filters[2], n_classes)
         self.pool = nn.MaxPool2d(2, 2)
-
+        
     def forward(self, x):
         """
         Predict the class of a batch of samples with the model.
@@ -105,11 +105,17 @@ class CNN(nn.Module):
             preds (tensor): logits of predictions of shape (N, C)
                 Reminder: logits are value pre-softmax.
         """
+<<<<<<< HEAD
         
         preds = F.relu(self.conv2d1(x))
         preds = F.relu(self.conv2d2(self.pool(preds)))
         preds = F.relu(self.conv2d3(self.pool(preds)))
         preds = self.pool(preds)
+=======
+        preds = self.pool(F.relu(self.conv2d1(x)))
+        preds = self.pool(F.relu(self.conv2d2(preds)))
+        preds = self.pool(F.relu(self.conv2d3(preds)))
+>>>>>>> 41a5e2ee95b93971c0ab05c7c0507292e98bcc78
         preds = preds.reshape((preds.shape[0], -1))
         preds = F.relu(self.fc1(preds))
         return self.fc2(preds)
