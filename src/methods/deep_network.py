@@ -71,7 +71,7 @@ class CNN(nn.Module):
     It should use at least one convolutional layer.
     """
 
-    def __init__(self, input_channels, n_classes, img_width=28, img_height=28, filters=(32, 64, 64), kernel_size=3):
+    def __init__(self, input_channels, n_classes, img_width=28, img_height=28, filters=(32, 64, 128), kernel_size=3):
         """
         Initialize the network.
         
@@ -392,7 +392,7 @@ class Trainer(object):
             # update weights
             self.optimizer.step()
             
-            update_progress_bar(it+1, len(dataloader), prefix=f"Epoch {ep+1}/{self.epochs}", suffix=f"Loss: {loss.item()}", length=50)
+            #update_progress_bar(it+1, len(dataloader), prefix=f"Epoch {ep+1}/{self.epochs}", suffix=f"Loss: {loss.item()}", length=50)
             eploss += loss.item()
 
         eploss /= len(dataloader)
