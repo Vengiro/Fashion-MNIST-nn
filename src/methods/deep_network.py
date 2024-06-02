@@ -284,23 +284,24 @@ class MyViT(nn.Module):
                 Reminder: logits are value pre-softmax.
         """
         n = x.shape[0]
-         # 1. Patchify
-        patches = MyViT.patchify(x, self.n_patches) 
-
+        # 1. Patchify
+        patches = MyViT.patchify(x, self.n_patches)
+        patches = patches.to(self.device)
         # 2. Linear mapping
-        tokens = self.linear(patches)
+        tokens = self.linear(patches).to(self.device)
 
         # 3. Add token
         tokens = torch.cat((self.token.expand(n, 1, -1), tokens), dim=1)
 
-        # 4. Add positional embeddings
-        preds = tokens + self.positional_embeddings.repeat(n, 1, 1)
+        # 4. Add positional embeddings and move them to the same device as input data
+        positional_embeddings = self.positional_embeddings.to(self.device)
+        preds = tokens + positional_embeddings.repeat(n, 1, 1)
 
         # 5. Transformer blocks
         for block in self.blocks:
             preds = block(preds)
 
-        # 6.Get classification token only
+        # 6. Get classification token only
         preds = preds[:, 0]
 
         # 7. Map to output
@@ -316,7 +317,7 @@ class Trainer(object):
     It will also serve as an interface between numpy and pytorch.
     """
 
-    def __init__(self, model, lr, epochs, batch_size, opti="SGD"):
+    def __init__(self, model, lr, epochs, batch_size, opti="SGD", device="cpu"):
         """
         Initialize the trainer object for a given model.
 
@@ -331,7 +332,9 @@ class Trainer(object):
         self.model = model
         self.batch_size = batch_size
         ### WRITE YOUR CODE HERE
-
+        self.device = torch.device("cuda" if device=="cuda" else "cpu")
+        self.model.to(self.device)  # Move the model to GPU if available
+        print(f"Model moved to {self.device}")
         self.criterion = nn.CrossEntropyLoss()
         if(opti == "SGD"):
             self.optimizer = torch.optim.SGD(model.parameters(), lr)
@@ -368,6 +371,7 @@ class Trainer(object):
         #### WRITE YOUR CODE HERE!
         ###
         ##
+        self.model = self.model.to(self.device)  # Move the model to the GPU
         self.model.train()
 
         eploss = 0
@@ -375,6 +379,8 @@ class Trainer(object):
         for it, data in enumerate(dataloader):
             x, y = data
 
+            # Move data to GPU
+            x, y = x.to(self.device), y.to(self.device)
             # foward pass through network from image to one hot vector
             y_pred = self.model(x)
             # calculate loss
@@ -417,9 +423,10 @@ class Trainer(object):
         ###
         ##
         self.model.eval()
-        pred_labels = torch.tensor([])
+        pred_labels = torch.tensor([]).to(self.device)
         with torch.no_grad():
             for it, data in enumerate(dataloader):
+                inputs = data[0].to(self.device)
                 for x in data[0]:
                     y_pred = nn.Softmax(dim=0)(self.model(x.unsqueeze(0)).squeeze(0))
                     pred_labels = torch.cat((pred_labels, torch.argmax(y_pred).unsqueeze(0)))
@@ -439,10 +446,15 @@ class Trainer(object):
         """
 
         # First, prepare data for pytorch
-        train_dataset = TensorDataset(torch.from_numpy(training_data).float(), 
-                                      torch.from_numpy(training_labels).long())
+        train_dataset = TensorDataset(torch.from_numpy(training_data).float().to(self.device), 
+                                      torch.from_numpy(training_labels).long().to(self.device))
         train_dataloader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
+        # Determine the device
+        device = torch.device("cuda" if self.device == "cuda" else "cpu")
 
+        # Move the model to the appropriate device
+        self.model.to(device)
+       
         s = time.time()
         self.train_all(train_dataloader)
         print("Total raining time: ", str(datetime.timedelta(seconds=time.time()-s)).split(".")[0])
@@ -464,7 +476,7 @@ class Trainer(object):
             pred_labels (array): labels of shape (N,)
         """
         # First, prepare data for pytorch
-        test_dataset = TensorDataset(torch.from_numpy(test_data).float())
+        test_dataset = TensorDataset(torch.from_numpy(test_data).float().to(self.device))
         test_dataloader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False)
 
         pred_labels = self.predict_torch(test_dataloader)
