@@ -22,6 +22,7 @@ def main(args):
     ## 1. First, we load our data and flatten the images into vectors
     xtrain, xtest, ytrain = load_data(args.data)
     xtrain = xtrain.reshape(xtrain.shape[0], -1)
+    num_test_samples=xtest.shape[0]
     xtest = xtest.reshape(xtest.shape[0], -1)
     print(f"Train data: {xtrain.shape} - Test data: {xtest.shape} - Train labels: {ytrain.shape}")
 
@@ -60,10 +61,6 @@ def main(args):
 
     ## 3. Initialize the method you want to use.
 
-    # Neural Networks (MS2)
-
-    # Prepare the model (and data) for Pytorch
-    # Note: you might need to reshape the data depending on the network you use!
     n_classes = get_n_classes(ytrain)
     in_size = xtrain.shape[1]
     if args.nn_type == "mlp":
@@ -104,16 +101,13 @@ def main(args):
     else:
         method_obj = Trainer(model, lr=args.lr, epochs=args.max_iters, batch_size=args.nn_batch_size,device=args.device)
         
-
-    # TODO: pour pas test tout le dataset pcq cest long
-    size = 1000
     ## 4. Train and evaluate the method
 
     # Fit (:=train) the method on the training data
     preds_train = method_obj.fit(xtrain, ytrain)
 
     # Predict on unseen data
-    preds = method_obj.predict(xtest)
+    preds = method_obj.predict(xtest, save_preds=args.test)
 
     ## Report results: performance on train and valid/test sets
     acc = accuracy_fn(preds_train, ytrain[:len(preds_train)])

@@ -465,7 +465,7 @@ class Trainer(object):
         print("Prediction time: ", str(datetime.timedelta(seconds=time.time()-s)).split(".")[0])
         return pred_labels
 
-    def predict(self, test_data):
+    def predict(self, test_data, save_preds=False):
         """
         Runs prediction on the test data.
 
@@ -481,6 +481,8 @@ class Trainer(object):
         test_dataloader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False)
 
         pred_labels = self.predict_torch(test_dataloader)
+        if(save_preds):
+            np.save("predictions", pred_labels.cpu().numpy()) 
 
         # We return the labels after transforming them into numpy array.
         return pred_labels.cpu().numpy()
