@@ -2,6 +2,7 @@ import argparse
 
 import numpy as np
 from torchinfo import summary
+from torch import cuda
 
 from src.data import load_data
 from src.methods.pca import PCA
@@ -84,7 +85,6 @@ def main(args):
         chw = (1, 28, 28)
         n_patches = 7
         n_blocks = 2
-        n_blocks = 2
         hidden_d = 128 
         n_heads = 2
         out_d = 10
@@ -99,11 +99,10 @@ def main(args):
     summary(model)
 
     # Trainer object
-
     if args.ADAM:
-        method_obj = Trainer(model, lr=args.lr, epochs=args.max_iters, batch_size=args.nn_batch_size, opti="ADAM")
+        method_obj = Trainer(model, lr=args.lr, epochs=args.max_iters, batch_size=args.nn_batch_size, opti="ADAM",device=args.device)
     else:
-        method_obj = Trainer(model, lr=args.lr, epochs=args.max_iters, batch_size=args.nn_batch_size)
+        method_obj = Trainer(model, lr=args.lr, epochs=args.max_iters, batch_size=args.nn_batch_size,device=args.device)
         
 
     # TODO: pour pas test tout le dataset pcq cest long

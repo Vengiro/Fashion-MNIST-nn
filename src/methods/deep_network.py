@@ -71,7 +71,7 @@ class CNN(nn.Module):
     It should use at least one convolutional layer.
     """
 
-    def __init__(self, input_channels, n_classes, img_width=28, img_height=28, filters=(24, 48, 96), kernel_size=3):
+    def __init__(self, input_channels, n_classes, img_width=28, img_height=28, filters=(32, 64, 128), kernel_size=3):
         """
         Initialize the network.
         
@@ -105,17 +105,9 @@ class CNN(nn.Module):
             preds (tensor): logits of predictions of shape (N, C)
                 Reminder: logits are value pre-softmax.
         """
-<<<<<<< HEAD
-        
-        preds = F.relu(self.conv2d1(x))
-        preds = F.relu(self.conv2d2(self.pool(preds)))
-        preds = F.relu(self.conv2d3(self.pool(preds)))
-        preds = self.pool(preds)
-=======
         preds = self.pool(F.relu(self.conv2d1(x)))
         preds = self.pool(F.relu(self.conv2d2(preds)))
         preds = self.pool(F.relu(self.conv2d3(preds)))
->>>>>>> 41a5e2ee95b93971c0ab05c7c0507292e98bcc78
         preds = preds.reshape((preds.shape[0], -1))
         preds = F.relu(self.fc1(preds))
         return self.fc2(preds)
@@ -222,7 +214,6 @@ class MyViT(nn.Module):
         self.n_patches = n_patches
         self.out_d = out_d
         self.chw = chw
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         # Patch
         assert chw[1] == chw[2], "be squared!"
         assert chw[1] % n_patches == 0, "input divisible by n_patches"
@@ -326,7 +317,7 @@ class Trainer(object):
     It will also serve as an interface between numpy and pytorch.
     """
 
-    def __init__(self, model, lr, epochs, batch_size, opti="SGD"):
+    def __init__(self, model, lr, epochs, batch_size, opti="SGD", device="cpu"):
         """
         Initialize the trainer object for a given model.
 
@@ -341,7 +332,7 @@ class Trainer(object):
         self.model = model
         self.batch_size = batch_size
         ### WRITE YOUR CODE HERE
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda" if device=="cuda" else "cpu")
         self.model.to(self.device)  # Move the model to GPU if available
         print(f"Model moved to {self.device}")
         self.criterion = nn.CrossEntropyLoss()
@@ -380,6 +371,7 @@ class Trainer(object):
         #### WRITE YOUR CODE HERE!
         ###
         ##
+        self.model = self.model.to(self.device)  # Move the model to the GPU
         self.model.train()
 
         eploss = 0
@@ -458,7 +450,7 @@ class Trainer(object):
                                       torch.from_numpy(training_labels).long().to(self.device))
         train_dataloader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
         # Determine the device
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda" if self.device == "cuda" else "cpu")
 
         # Move the model to the appropriate device
         self.model.to(device)
@@ -484,7 +476,7 @@ class Trainer(object):
             pred_labels (array): labels of shape (N,)
         """
         # First, prepare data for pytorch
-        test_dataset = TensorDataset(torch.from_numpy(test_data).float()).to(self)
+        test_dataset = TensorDataset(torch.from_numpy(test_data).float().to(self.device))
         test_dataloader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False)
 
         pred_labels = self.predict_torch(test_dataloader)
