@@ -71,7 +71,7 @@ class CNN(nn.Module):
     It should use at least one convolutional layer.
     """
 
-    def __init__(self, input_channels, n_classes, img_width=28, img_height=28, filters=(24, 48, 96), kernel_size=3):
+    def __init__(self, input_channels, n_classes, img_width=28, img_height=28, filters=(32, 64, 128), kernel_size=3):
         """
         Initialize the network.
         
@@ -452,7 +452,7 @@ class Trainer(object):
         print("Prediction time: ", str(datetime.timedelta(seconds=time.time()-s)).split(".")[0])
         return pred_labels
 
-    def predict(self, test_data):
+    def predict(self, test_data, save_preds=False):
         """
         Runs prediction on the test data.
 
@@ -468,6 +468,8 @@ class Trainer(object):
         test_dataloader = DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False)
 
         pred_labels = self.predict_torch(test_dataloader)
+        if(save_preds):
+            np.save("predictions", pred_labels.cpu().numpy()) 
 
         # We return the labels after transforming them into numpy array.
         return pred_labels.cpu().numpy()
