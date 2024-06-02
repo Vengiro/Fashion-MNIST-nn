@@ -85,7 +85,7 @@ def main(args):
         chw = (1, 28, 28)
         n_patches = 7
         n_blocks = 2
-        hidden_d = 128 
+        hidden_d = 256
         n_heads = 2
         out_d = 10
 

@@ -71,7 +71,7 @@ class CNN(nn.Module):
     It should use at least one convolutional layer.
     """
 
-    def __init__(self, input_channels, n_classes, img_width=28, img_height=28, filters=(32, 64, 128), kernel_size=3):
+    def __init__(self, input_channels, n_classes, img_width=28, img_height=28, filters=(32, 64, 64), kernel_size=3):
         """
         Initialize the network.
         
@@ -214,6 +214,7 @@ class MyViT(nn.Module):
         self.n_patches = n_patches
         self.out_d = out_d
         self.chw = chw
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         # Patch
         assert chw[1] == chw[2], "be squared!"
         assert chw[1] % n_patches == 0, "input divisible by n_patches"
